@@ -1,25 +1,18 @@
-import logo from './logo.svg';
-import './App.css';
+//https://thewebdev.info/2021/01/31/create-a-hi-low-card-game-with-react-and-javascript/
+import React, { useEffect, useState } from "react";
+// import CardInHand from
+import Deck from "./components/Deck";
 
-function App() {
+//global variables to toggle depending on game status
+let inRound, stopGame;
+
+export default function App() {
+  //game logic here
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <h1>The Game</h1>
+      <Deck />
     </div>
   );
 }
-
-export default App;
