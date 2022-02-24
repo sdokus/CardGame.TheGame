@@ -1,93 +1,118 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
 //create the values for each of the cards (2-99)
 const VALUES = Array.from(Array(98).keys());
+let gameStarted = false;
 
-//class component drawDeck:
-export default class drawDeck extends React.Component {
-  constructor() {
-    super();
-    this.state = {
-      drawDeck: [], //the drawDeck is an array of card objects
-      cardsInHand: [],
-      selectedCard: {},
-      decrementingDeck1: [new Card(100)],
-      decrementingDeck2: [new Card(100)],
-      incrementingDeck1: [new Card(1)],
-      incrementingDeck2: [new Card(1)],
-    };
-  }
-  //when the page initially renders, set the state to the full drawPile
-  componentDidMount() {
-    /*-----Create and shuffle a new drawPile drawDeck----*/
-    //create an array with cards with values 2-99
+function TheGame() {
+  const [drawDeck, setDrawDeck] = useState([]);
+  const [cardsInHand, setCardsInHand] = useState([]);
+  const [decrementingDeck1, setDecrementingDeck1] = useState([new Card(100)]);
+  const [decrementingDeck2, setDecrementingDeck2] = useState([new Card(100)]);
+  const [incrementingDeck1, setIncrementingDeck1] = useState([new Card(1)]);
+  const [incrementingDeck2, setIncrementingDeck2] = useState([new Card(1)]);
+
+  const startGame = () => {
+    /*-----Create and shuffle a new drawDeck----*/
+    gameStarted = true;
     let cardsArr = VALUES.map((value) => {
-      return new Card(value + 2); //creates new Card instance for each value from the array of values 2-99
+      return new Card(value + 2);
     });
 
-    //shuffle that array
     for (let i = cardsArr.length - 1; i > 0; i--) {
-      //get placement in drawDeck that is different than the current index:
       const newIndex = Math.floor(Math.random() * (i + 1));
-
-      //swap the current index's value with the randomly generated index:
       const oldValue = cardsArr[newIndex];
       cardsArr[newIndex] = cardsArr[i];
       cardsArr[i] = oldValue;
     }
 
-    //set the drawDeck state to be the shuffled cards array
-    this.setState({
-      drawDeck: cardsArr,
-    });
-  }
+    setDrawDeck(cardsArr);
+  };
 
-  dealCards() {
-    /*-----"Deal" 6 cards to the cardsInHand array----*/
-    let cardsToAddToHand = [];
-    while (cardsToAddToHand.length < 6) {
-      let topCard = this.state.drawDeck.shift();
-      cardsToAddToHand.push(topCard);
+  const dealCards = () => {
+    if (gameStarted) {
+      /*-----"Deal" 6 cards to the cardsInHand array----*/
+      let cardsCurrentlyInHand = cardsInHand;
+
+      while (cardsCurrentlyInHand.length < 6) {
+        let topCard = drawDeck.shift();
+        cardsCurrentlyInHand.push(topCard);
+      }
+
+      setCardsInHand([...cardsCurrentlyInHand]);
+    } else {
+      alert("Must start the game before dealing cards!");
     }
-    this.setState({
-      cardsInHand: [...this.state.cardsInHand, ...cardsToAddToHand],
-    });
-  }
-  selectCard(e) {
-    let cardValue = ~~e.target.innerText;
-    let selectCard = this.state.cardsInHand.filter(
-      (card) => card.state.value === cardValue
-    )[0];
-    console.log(selectCard);
-    selectCard.state.selected = true;
-    this.setState({
-      selectedCard: selectCard,
-    });
+  };
+
+  function handleOnDragEnd(result) {
+    if (!result.destination) return;
+    const items = Array.from(cardsInHand);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setCardsInHand(items);
   }
 
-  render() {
-    console.log(this.state);
-    return (
-      <div className="main">
-        <div className="deck draw-deck">
-          Draw Deck: {this.state.drawDeck.length}
-        </div>
-        {/* <div className="deck">
-          Decreasing Deck: {this.state.decrementingDeck1[0]}
-        </div> */}
-        <button onClick={() => this.dealCards()}>Deal Cards</button>
-        <div className="cards-in-hand">
-          {this.state.cardsInHand.map((card, i) => {
-            return (
-              <div key={i} onClick={(e) => this.selectCard(e)}>
-                {card.getJSX()}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
+  return (
+    <div className="main">
+      <button onClick={startGame}>Start Game</button>
+      <div className="deck draw-deck">Draw Deck: ({drawDeck.length})</div>
+
+      <ul className="deck-slots">
+        <li className="deck decrementing-deck">
+          Going Down: {decrementingDeck1[0].state.value}
+        </li>
+
+        <li className="deck decrementing-deck">
+          Going Down: {decrementingDeck2[0].state.value}
+        </li>
+
+        <li className="deck incrementing-deck">
+          Going Up: {incrementingDeck1[0].state.value}
+        </li>
+
+        <li className="deck incrementing-deck">
+          Going Up: {incrementingDeck2[0].state.value}
+        </li>
+      </ul>
+      <button onClick={dealCards}>Deal Cards</button>
+
+      <DragDropContext onDragEnd={handleOnDragEnd}>
+        <Droppable droppableId="cards-in-hand" direction="horizontal">
+          {(provided) => (
+            <ul
+              className="cards-in-hand"
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+            >
+              {cardsInHand.map((card, i) => {
+                return (
+                  <Draggable
+                    key={card.state.value.toString()}
+                    draggableId={card.state.value.toString()}
+                    index={i}
+                  >
+                    {(provided) => (
+                      <li
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                      >
+                        {card.getJSX()}
+                      </li>
+                    )}
+                  </Draggable>
+                );
+              })}
+              {provided.placeholder}
+            </ul>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </div>
+  );
 }
 
 //class component Card:
@@ -125,6 +150,12 @@ class Card extends React.Component {
   }
 
   getJSX() {
+    if (this.state.selected) {
+      <div className={this.color()} id="selected " value={this.state.value}>
+        {this.state.value}
+      </div>;
+    }
+
     return (
       <div className={this.color()} value={this.state.value}>
         {this.state.value}
@@ -140,3 +171,5 @@ class Card extends React.Component {
     );
   }
 }
+
+export default TheGame;

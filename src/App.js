@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Deck from "./components/Deck";
 
 //global variables to toggle depending on game status
-let inRound, stopGame;
+// let inRound, stopGame;
 
 export default function App() {
   //game logic here

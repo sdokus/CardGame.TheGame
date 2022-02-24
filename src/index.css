@@ -14,6 +14,13 @@ body {
   padding-top: 3rem;
 }
 
+.deck-slots {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 1rem;
+  list-style: none;
+}
+
 .deck {
   height: 8rem;
   width: 5rem;
@@ -22,19 +29,23 @@ body {
   justify-content: center;
   align-items: center;
   text-align: center;
-  font-size: 3rem;
+  font-size: 1rem;
   border-radius: 0.5rem;
   color: white;
   user-select: none;
+  margin: 1rem;
 }
 
-.computer-deck {
+.decrementing-deck {
   background-color: black;
+}
+
+.incrementing-deck {
+  background-color: #9b2226;
 }
 
 .draw-deck {
   background-color: rgb(65, 62, 62);
-  font-size: 1.5rem;
 }
 
 .text {
@@ -56,9 +67,12 @@ body {
   font-size: 3rem;
   color: white;
   user-select: none;
+
+  margin: 0.5rem;
 }
 
 .cards-in-hand {
+  list-style: none;
   display: flex;
   flex-wrap: wrap;
   padding: 3rem;
@@ -102,4 +116,11 @@ body {
 
 .card.single-digit {
   background-color: #9b2226;
+}
+
+#selected {
+  height: 14rem;
+  width: 8rem;
+  border: 1px solid white;
+  border-radius: 0.5rem;
 }
