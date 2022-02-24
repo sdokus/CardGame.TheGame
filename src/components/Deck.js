@@ -47,39 +47,143 @@ function TheGame() {
   };
 
   function handleOnDragEnd(result) {
-    if (!result.destination) return;
+    const { destination, source } = result;
+    //if trying to drag to a non-droppable area, don't do anything:
+    if (!destination) return;
+
+    //if the dragged item is back where it started, don't do anything:
+    // if (
+    //   destination.droppableId === source.droppableId &&
+    //   destination.index === source.index
+    // ) {
+    //   return;
+    // }
+
+    //if trying to drop a card into a deck
+    if (destination.droppableId === "deck-slots") {
+      result.combine = true;
+      const currentCardsInHand = Array.from(cardsInHand);
+      const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
+
+      console.log(cardToAdd);
+
+      if (destination.index === 0) {
+        setDecrementingDeck1([...decrementingDeck1, cardToAdd]);
+        console.log(decrementingDeck1);
+      } else if (destination.index === 1) {
+        setDecrementingDeck2([...decrementingDeck2, cardToAdd]);
+      } else if (destination.index === 2) {
+        setIncrementingDeck1([...incrementingDeck1, cardToAdd]);
+      } else if (destination.index === 3) {
+        setIncrementingDeck2([...incrementingDeck2, cardToAdd]);
+      }
+    }
+
+    //if you're just moving cards within your hand:
     const items = Array.from(cardsInHand);
     const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    items.splice(destination.index, 0, reorderedItem);
 
     setCardsInHand(items);
+    console.log(result);
   }
 
   return (
     <div className="main">
       <button onClick={startGame}>Start Game</button>
       <div className="deck draw-deck">Draw Deck: ({drawDeck.length})</div>
-
-      <ul className="deck-slots">
-        <li className="deck decrementing-deck">
-          Going Down: {decrementingDeck1[0].state.value}
-        </li>
-
-        <li className="deck decrementing-deck">
-          Going Down: {decrementingDeck2[0].state.value}
-        </li>
-
-        <li className="deck incrementing-deck">
-          Going Up: {incrementingDeck1[0].state.value}
-        </li>
-
-        <li className="deck incrementing-deck">
-          Going Up: {incrementingDeck2[0].state.value}
-        </li>
-      </ul>
-      <button onClick={dealCards}>Deal Cards</button>
-
       <DragDropContext onDragEnd={handleOnDragEnd}>
+        <Droppable
+          droppableId="deck-slots"
+          direction="horizontal"
+          isCombineEnabled={true}
+        >
+          {(provided) => (
+            <ul
+              className="deck-slots"
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+            >
+              <Draggable
+                key={"decrementingDeck1"}
+                draggableId={"decrementingDeck1"}
+                index={0}
+                isDragDisabled={true}
+                disableInteractiveElementBlocking={true}
+              >
+                {(provided) => (
+                  <li
+                    className="deck decrementing-deck"
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                  >
+                    Going Down:{" "}
+                    {
+                      decrementingDeck1[decrementingDeck1.length - 1].state
+                        .value
+                    }
+                  </li>
+                )}
+              </Draggable>
+              <Draggable
+                key={"decrementingDeck2"}
+                draggableId={"decrementingDeck2"}
+                index={1}
+                isDragDisabled={true}
+              >
+                {(provided) => (
+                  <li
+                    className="deck decrementing-deck"
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                  >
+                    Going Down: {decrementingDeck2[0].state.value}
+                  </li>
+                )}
+              </Draggable>
+              <Draggable
+                key={"incrementingDeck1"}
+                draggableId={"incrementingDeck1"}
+                index={2}
+                isDragDisabled={true}
+              >
+                {(provided) => (
+                  <li
+                    className="deck incrementing-deck"
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                  >
+                    Going Up: {incrementingDeck1[0].state.value}
+                  </li>
+                )}
+              </Draggable>
+              <Draggable
+                key={"incrementingDeck2"}
+                draggableId={"incrementingDeck2"}
+                index={3}
+                isDragDisabled={true}
+              >
+                {(provided) => (
+                  <li
+                    className="deck incrementing-deck"
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                  >
+                    Going Up: {incrementingDeck2[0].state.value}
+                  </li>
+                )}
+              </Draggable>
+              {provided.placeholder}
+            </ul>
+          )}
+        </Droppable>
+
+        <button onClick={dealCards}>Deal Cards</button>
+
         <Droppable droppableId="cards-in-hand" direction="horizontal">
           {(provided) => (
             <ul
