@@ -3,7 +3,6 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
 //create the values for each of the cards (2-99)
 const VALUES = Array.from(Array(98).keys());
-let gameStarted = false;
 
 function TheGame() {
   const [drawDeck, setDrawDeck] = useState([]);
@@ -13,9 +12,12 @@ function TheGame() {
   const [incrementingDeck1, setIncrementingDeck1] = useState([new Card(1)]);
   const [incrementingDeck2, setIncrementingDeck2] = useState([new Card(1)]);
 
+  useEffect(() => {
+    startGame();
+  }, []);
+
   const startGame = () => {
     /*-----Create and shuffle a new drawDeck----*/
-    gameStarted = true;
     let cardsArr = VALUES.map((value) => {
       return new Card(value + 2);
     });
@@ -31,51 +33,77 @@ function TheGame() {
   };
 
   const dealCards = () => {
-    if (gameStarted) {
-      /*-----"Deal" 6 cards to the cardsInHand array----*/
-      let cardsCurrentlyInHand = cardsInHand;
+    /*-----"Deal" 6 cards to the cardsInHand array----*/
+    let cardsCurrentlyInHand = cardsInHand;
 
+    if (cardsCurrentlyInHand.length < 4) {
       while (cardsCurrentlyInHand.length < 6) {
         let topCard = drawDeck.shift();
         cardsCurrentlyInHand.push(topCard);
       }
 
       setCardsInHand([...cardsCurrentlyInHand]);
-    } else {
-      alert("Must start the game before dealing cards!");
+      return;
     }
+
+    alert("Must play at least two cards before re-dealing cards to hand");
   };
 
   function handleOnDragEnd(result) {
-    const { destination, source } = result;
+    const { destination } = result;
     //if trying to drag to a non-droppable area, don't do anything:
     if (!destination) return;
 
-    //if the dragged item is back where it started, don't do anything:
-    // if (
-    //   destination.droppableId === source.droppableId &&
-    //   destination.index === source.index
-    // ) {
-    //   return;
-    // }
-
-    //if trying to drop a card into a deck
+    //if trying to drop a card into a deck:
     if (destination.droppableId === "deck-slots") {
-      result.combine = true;
       const currentCardsInHand = Array.from(cardsInHand);
-      const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
-
-      console.log(cardToAdd);
+      // const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
+      // setCardsInHand(currentCardsInHand);
 
       if (destination.index === 0) {
-        setDecrementingDeck1([...decrementingDeck1, cardToAdd]);
-        console.log(decrementingDeck1);
+        //trying to add to decrementing deck 1
+        const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
+        const currTopCard = decrementingDeck1[decrementingDeck1.length - 1];
+        if (cardToAdd.state.value < currTopCard.state.value) {
+          setCardsInHand(currentCardsInHand);
+          setDecrementingDeck1([...decrementingDeck1, cardToAdd]);
+          return;
+        } else {
+          alert(`Card needs to be lower than ${currTopCard.state.value}`);
+        }
       } else if (destination.index === 1) {
-        setDecrementingDeck2([...decrementingDeck2, cardToAdd]);
+        //trying to add to decrementing deck 2
+        const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
+        const currTopCard = decrementingDeck2[decrementingDeck2.length - 1];
+        if (cardToAdd.state.value < currTopCard.state.value) {
+          setCardsInHand(currentCardsInHand);
+          setDecrementingDeck2([...decrementingDeck2, cardToAdd]);
+          return;
+        } else {
+          alert(`Card needs to be lower than ${currTopCard.state.value}`);
+        }
       } else if (destination.index === 2) {
-        setIncrementingDeck1([...incrementingDeck1, cardToAdd]);
+        //trying to add to incrementing deck 1
+        const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
+        const currTopCard = incrementingDeck1[incrementingDeck1.length - 1];
+        if (cardToAdd.state.value > currTopCard.state.value) {
+          setCardsInHand(currentCardsInHand);
+          setIncrementingDeck1([...incrementingDeck1, cardToAdd]);
+          return;
+        } else {
+          alert(`Card needs to be higher than ${currTopCard.state.value}`);
+        }
       } else if (destination.index === 3) {
-        setIncrementingDeck2([...incrementingDeck2, cardToAdd]);
+        //trying to add to incrementing deck 2
+        const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
+        const currTopCard = incrementingDeck2[incrementingDeck2.length - 1];
+        if (cardToAdd.state.value > currTopCard.state.value) {
+          setCardsInHand(currentCardsInHand);
+          setIncrementingDeck2([...incrementingDeck2, cardToAdd]);
+          return;
+        } else {
+          alert(`Card needs to be higher than ${currTopCard.state.value}`);
+        }
       }
     }
 
@@ -83,21 +111,14 @@ function TheGame() {
     const items = Array.from(cardsInHand);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(destination.index, 0, reorderedItem);
-
     setCardsInHand(items);
-    console.log(result);
   }
 
   return (
     <div className="main">
-      <button onClick={startGame}>Start Game</button>
       <div className="deck draw-deck">Draw Deck: ({drawDeck.length})</div>
       <DragDropContext onDragEnd={handleOnDragEnd}>
-        <Droppable
-          droppableId="deck-slots"
-          direction="horizontal"
-          isCombineEnabled={true}
-        >
+        <Droppable droppableId="deck-slots" direction="horizontal">
           {(provided) => (
             <ul
               className="deck-slots"
@@ -109,21 +130,22 @@ function TheGame() {
                 draggableId={"decrementingDeck1"}
                 index={0}
                 isDragDisabled={true}
-                disableInteractiveElementBlocking={true}
               >
                 {(provided) => (
-                  <li
-                    className="deck decrementing-deck"
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                  >
-                    Going Down:{" "}
-                    {
-                      decrementingDeck1[decrementingDeck1.length - 1].state
-                        .value
-                    }
-                  </li>
+                  <div>
+                    <h3>Going Down: </h3>
+                    <li
+                      className="deck decrementing-deck"
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                    >
+                      {
+                        decrementingDeck1[decrementingDeck1.length - 1].state
+                          .value
+                      }
+                    </li>
+                  </div>
                 )}
               </Draggable>
               <Draggable
@@ -133,14 +155,20 @@ function TheGame() {
                 isDragDisabled={true}
               >
                 {(provided) => (
-                  <li
-                    className="deck decrementing-deck"
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                  >
-                    Going Down: {decrementingDeck2[0].state.value}
-                  </li>
+                  <div>
+                    <h3> ↓ </h3>
+                    <li
+                      className="deck decrementing-deck"
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                    >
+                      {
+                        decrementingDeck2[decrementingDeck2.length - 1].state
+                          .value
+                      }
+                    </li>
+                  </div>
                 )}
               </Draggable>
               <Draggable
@@ -150,14 +178,20 @@ function TheGame() {
                 isDragDisabled={true}
               >
                 {(provided) => (
-                  <li
-                    className="deck incrementing-deck"
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                  >
-                    Going Up: {incrementingDeck1[0].state.value}
-                  </li>
+                  <div>
+                    <h3> Going Up:</h3>
+                    <li
+                      className="deck incrementing-deck"
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                    >
+                      {
+                        incrementingDeck1[incrementingDeck1.length - 1].state
+                          .value
+                      }
+                    </li>
+                  </div>
                 )}
               </Draggable>
               <Draggable
@@ -167,14 +201,20 @@ function TheGame() {
                 isDragDisabled={true}
               >
                 {(provided) => (
-                  <li
-                    className="deck incrementing-deck"
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                  >
-                    Going Up: {incrementingDeck2[0].state.value}
-                  </li>
+                  <div>
+                    <h3>↑</h3>
+                    <li
+                      className="deck incrementing-deck"
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                    >
+                      {
+                        incrementingDeck2[incrementingDeck2.length - 1].state
+                          .value
+                      }
+                    </li>
+                  </div>
                 )}
               </Draggable>
               {provided.placeholder}
@@ -225,7 +265,6 @@ class Card extends React.Component {
     super();
     this.state = {
       value: value, //each card's value is a number 2-99
-      selected: false,
     };
   }
 
@@ -254,12 +293,6 @@ class Card extends React.Component {
   }
 
   getJSX() {
-    if (this.state.selected) {
-      <div className={this.color()} id="selected " value={this.state.value}>
-        {this.state.value}
-      </div>;
-    }
-
     return (
       <div className={this.color()} value={this.state.value}>
         {this.state.value}

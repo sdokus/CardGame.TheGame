@@ -1,7 +1,7 @@
-*,
-*::after,
-*::before {
+* {
   box-sizing: border-box;
+  background-color: #525252;
+  color: white;
 }
 
 body {
@@ -12,6 +12,23 @@ body {
   gap: 0.5rem;
   justify-content: center;
   padding-top: 3rem;
+}
+
+h1 {
+  display: flex;
+  justify-content: center;
+}
+
+.instructions {
+  display: flex;
+  flex-wrap: wrap;
+  width: 50rem;
+}
+
+button {
+  margin: 1rem;
+  height: 2.5rem;
+  width: 7rem;
 }
 
 .deck-slots {
@@ -38,10 +55,12 @@ body {
 
 .decrementing-deck {
   background-color: black;
+  font-size: 3rem;
 }
 
 .incrementing-deck {
   background-color: #9b2226;
+  font-size: 3rem;
 }
 
 .draw-deck {
