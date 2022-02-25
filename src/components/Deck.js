@@ -30,13 +30,18 @@ function TheGame() {
     }
 
     setDrawDeck(cardsArr);
+    setCardsInHand([]);
+    setDecrementingDeck1([new Card(100)]);
+    setDecrementingDeck2([new Card(100)]);
+    setIncrementingDeck1([new Card(1)]);
+    setIncrementingDeck2([new Card(1)]);
   };
 
   const dealCards = () => {
     /*-----"Deal" 6 cards to the cardsInHand array----*/
     let cardsCurrentlyInHand = cardsInHand;
 
-    if (cardsCurrentlyInHand.length < 4) {
+    if (cardsCurrentlyInHand.length <= 4) {
       while (cardsCurrentlyInHand.length < 6) {
         let topCard = drawDeck.shift();
         cardsCurrentlyInHand.push(topCard);
@@ -64,7 +69,10 @@ function TheGame() {
         //trying to add to decrementing deck 1
         const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
         const currTopCard = decrementingDeck1[decrementingDeck1.length - 1];
-        if (cardToAdd.state.value < currTopCard.state.value) {
+        if (
+          cardToAdd.state.value < currTopCard.state.value ||
+          cardToAdd.state.value - currTopCard.state.value === 10
+        ) {
           setCardsInHand(currentCardsInHand);
           setDecrementingDeck1([...decrementingDeck1, cardToAdd]);
           return;
@@ -75,7 +83,10 @@ function TheGame() {
         //trying to add to decrementing deck 2
         const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
         const currTopCard = decrementingDeck2[decrementingDeck2.length - 1];
-        if (cardToAdd.state.value < currTopCard.state.value) {
+        if (
+          cardToAdd.state.value < currTopCard.state.value ||
+          cardToAdd.state.value - currTopCard.state.value === 10
+        ) {
           setCardsInHand(currentCardsInHand);
           setDecrementingDeck2([...decrementingDeck2, cardToAdd]);
           return;
@@ -86,7 +97,10 @@ function TheGame() {
         //trying to add to incrementing deck 1
         const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
         const currTopCard = incrementingDeck1[incrementingDeck1.length - 1];
-        if (cardToAdd.state.value > currTopCard.state.value) {
+        if (
+          cardToAdd.state.value > currTopCard.state.value ||
+          currTopCard.state.value - cardToAdd.state.value === 10
+        ) {
           setCardsInHand(currentCardsInHand);
           setIncrementingDeck1([...incrementingDeck1, cardToAdd]);
           return;
@@ -97,7 +111,10 @@ function TheGame() {
         //trying to add to incrementing deck 2
         const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
         const currTopCard = incrementingDeck2[incrementingDeck2.length - 1];
-        if (cardToAdd.state.value > currTopCard.state.value) {
+        if (
+          cardToAdd.state.value > currTopCard.state.value ||
+          currTopCard.state.value - cardToAdd.state.value === 10
+        ) {
           setCardsInHand(currentCardsInHand);
           setIncrementingDeck2([...incrementingDeck2, cardToAdd]);
           return;
