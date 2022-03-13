@@ -2,14 +2,25 @@ import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import Cards from "./Cards";
 import useCards from "../hooks/useCards";
+// import useDragNDrop from "../hooks/useDragNDrop";
 
 function TheGame() {
-  const [decrementingDeck1, setDecrementingDeck1] = useState([new Cards(100)]);
-  const [decrementingDeck2, setDecrementingDeck2] = useState([new Cards(100)]);
-  const [incrementingDeck1, setIncrementingDeck1] = useState([new Cards(1)]);
-  const [incrementingDeck2, setIncrementingDeck2] = useState([new Cards(1)]);
-  const { drawDeck, startGame, dealCards, cardsInHand, setCardsInHand } =
-    useCards();
+  const {
+    drawDeck,
+    cardsInHand,
+    setCardsInHand,
+    incrementingDeck1,
+    setIncrementingDeck1,
+    decrementingDeck1,
+    setDecrementingDeck1,
+    incrementingDeck2,
+    setIncrementingDeck2,
+    decrementingDeck2,
+    setDecrementingDeck2,
+    startGame,
+    dealCards,
+  } = useCards();
+  // const { handleOnDragEnd } = useDragNDrop();
 
   useEffect(() => {
     startGame();
