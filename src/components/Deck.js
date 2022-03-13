@@ -1,59 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import Cards from "./Cards";
-
-//create the values for each of the cards (2-99)
-const VALUES = Array.from(Array(98).keys());
+import useCards from "../hooks/useCards";
 
 function TheGame() {
-  const [drawDeck, setDrawDeck] = useState([]);
-  const [cardsInHand, setCardsInHand] = useState([]);
   const [decrementingDeck1, setDecrementingDeck1] = useState([new Cards(100)]);
   const [decrementingDeck2, setDecrementingDeck2] = useState([new Cards(100)]);
   const [incrementingDeck1, setIncrementingDeck1] = useState([new Cards(1)]);
   const [incrementingDeck2, setIncrementingDeck2] = useState([new Cards(1)]);
+  const { drawDeck, startGame, dealCards, cardsInHand, setCardsInHand } =
+    useCards();
 
   useEffect(() => {
     startGame();
   }, []);
-
-  const startGame = () => {
-    /*-----Create and shuffle a new drawDeck----*/
-    let cardsArr = VALUES.map((value) => {
-      return new Cards(value + 2);
-    });
-
-    for (let i = cardsArr.length - 1; i > 0; i--) {
-      const newIndex = Math.floor(Math.random() * (i + 1));
-      const oldValue = cardsArr[newIndex];
-      cardsArr[newIndex] = cardsArr[i];
-      cardsArr[i] = oldValue;
-    }
-
-    setDrawDeck(cardsArr);
-    setCardsInHand([]);
-    setDecrementingDeck1([new Cards(100)]);
-    setDecrementingDeck2([new Cards(100)]);
-    setIncrementingDeck1([new Cards(1)]);
-    setIncrementingDeck2([new Cards(1)]);
-  };
-
-  const dealCards = () => {
-    /*-----"Deal" 8 cards to the cardsInHand array----*/
-    let cardsCurrentlyInHand = cardsInHand;
-
-    if (cardsCurrentlyInHand.length <= 6) {
-      while (cardsCurrentlyInHand.length < 8) {
-        let topCard = drawDeck.shift();
-        cardsCurrentlyInHand.push(topCard);
-      }
-
-      setCardsInHand([...cardsCurrentlyInHand]);
-      return;
-    }
-
-    alert("Must play at least two cards before re-dealing cards to hand");
-  };
 
   function handleOnDragEnd(result) {
     const { destination } = result;
@@ -63,8 +23,6 @@ function TheGame() {
     //if trying to drop a card into a deck:
     if (destination.droppableId === "deck-slots") {
       const currentCardsInHand = Array.from(cardsInHand);
-      // const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
-      // setCardsInHand(currentCardsInHand);
 
       if (destination.index === 0) {
         //trying to add to decrementing deck 1

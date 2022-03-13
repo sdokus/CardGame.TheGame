@@ -1,8 +1,9 @@
 import React, { useState } from "react";
+import Cards from "../components/Cards";
 
 export default function useCards() {
   const [drawDeck, setDrawDeck] = useState([]);
-  // const [cardsInHand, setCardsInHand] = useState([]);
+  const [cardsInHand, setCardsInHand] = useState([]);
   const VALUES = Array.from(Array(98).keys());
 
   const startGame = () => {
@@ -21,12 +22,33 @@ export default function useCards() {
     setDrawDeck(cardsArr);
   };
 
+  const dealCards = () => {
+    /*-----"Deal" 6 cards to the cardsInHand array----*/
+    let cardsCurrentlyInHand = cardsInHand;
+
+    if (cardsCurrentlyInHand.length <= 6) {
+      while (cardsCurrentlyInHand.length < 8) {
+        let topCard = drawDeck.shift();
+        cardsCurrentlyInHand.push(topCard);
+      }
+
+      setCardsInHand([...cardsCurrentlyInHand]);
+      return;
+    }
+
+    alert("Must play at least two cards before re-dealing cards to hand");
+  };
+
   return {
     drawDeck,
+    cardsInHand,
+    setCardsInHand,
     startGame,
+    dealCards,
   };
 }
 
-function Cards(value) {
-  this.value = value;
-}
+// //Constructor function for Cards:
+// function Card (value) {
+//   this.value = value;
+// }
