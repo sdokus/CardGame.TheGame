@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Cards from "../components/Cards";
 
 export default function useCards() {
