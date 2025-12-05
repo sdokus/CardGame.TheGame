@@ -4,4 +4,4 @@ This project is a clone of a card game that exists. I do not claim to have creat
 
 ## To get started
 
-npm start
+`npm start`

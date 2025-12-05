@@ -1,51 +1,34 @@
-import React from "react";
-
-class Cards extends React.Component {
-  constructor(value) {
-    super();
-    this.state = {
-      value: value, //each card's value is a number 2-99
-    };
-  }
-
-  //the card's color is determined by it's value
-  color() {
-    if (this.state.value <= 100 && this.state.value >= 90) {
+// Card component - displays a card with a value (2-99 or 1/100 for deck starters).
+function Card({ value }) {
+  // The card's color is determined by its value.
+  const getColorClass = () => {
+    if (value <= 100 && value >= 90) {
       return "card nineties";
-    } else if (this.state.value <= 89 && this.state.value >= 80) {
+    } else if (value <= 89 && value >= 80) {
       return "card eighties";
-    } else if (this.state.value <= 79 && this.state.value >= 70) {
+    } else if (value <= 79 && value >= 70) {
       return "card seventies";
-    } else if (this.state.value <= 69 && this.state.value >= 60) {
+    } else if (value <= 69 && value >= 60) {
       return "card sixties";
-    } else if (this.state.value <= 59 && this.state.value >= 50) {
+    } else if (value <= 59 && value >= 50) {
       return "card fifties";
-    } else if (this.state.value <= 49 && this.state.value >= 40) {
+    } else if (value <= 49 && value >= 40) {
       return "card forties";
-    } else if (this.state.value <= 39 && this.state.value >= 30) {
+    } else if (value <= 39 && value >= 30) {
       return "card thirties";
-    } else if (this.state.value <= 29 && this.state.value >= 20) {
+    } else if (value <= 29 && value >= 20) {
       return "card twenties";
-    } else if (this.state.value <= 19 && this.state.value >= 10) {
+    } else if (value <= 19 && value >= 10) {
       return "card teens";
     }
     return "card single-digit";
-  }
+  };
 
-  getJSX() {
-    return (
-      <div className={this.color()} value={this.state.value}>
-        {this.state.value}
-      </div>
-    );
-  }
-
-  render() {
-    return (
-      <div className="card" value={this.color()}>
-        {this.state.value}
-      </div>
-    );
-  }
+  return (
+    <div className={`card ${getColorClass()}`}>
+      {value}
+    </div>
+  );
 }
-export default Cards;
+
+export default Card;

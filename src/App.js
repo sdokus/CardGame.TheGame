@@ -1,5 +1,4 @@
-//https://thewebdev.info/2021/01/31/create-a-hi-low-card-game-with-react-and-javascript/
-import React, { useEffect, useState } from "react";
+// https://thewebdev.info/2021/01/31/create-a-hi-low-card-game-with-react-and-javascript/
 import Deck from "./components/Deck";
 import Instructions from "./components/Instructions";
 

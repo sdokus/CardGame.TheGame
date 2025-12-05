@@ -1,8 +1,72 @@
-import React, { useState, useEffect } from "react";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import Cards from "./Cards";
+import { useEffect, useCallback, useRef, useState } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  useDroppable,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import Card from "./Cards";
 import useCards from "../hooks/useCards";
-// import useDragNDrop from "../hooks/useDragNDrop";
+
+// Sortable card component for cards in hand.
+function SortableCard({ card, id }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: id.toString() });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <li ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <Card value={card.value} />
+    </li>
+  );
+}
+
+// Droppable deck slot component.
+function DeckSlot({ deck, label, index, type }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `deck-slot-${index}`,
+  });
+
+  const topCard = deck[deck.length - 1];
+
+  return (
+    <div>
+      <h3>{label}</h3>
+      <li
+        className={`deck ${type}-deck`}
+        ref={setNodeRef}
+        style={{
+          backgroundColor: isOver ? "rgba(0, 255, 0, 0.2)" : "transparent",
+        }}
+      >
+        {topCard.value}
+      </li>
+    </div>
+  );
+}
 
 function TheGame() {
   const {
@@ -20,228 +84,211 @@ function TheGame() {
     startGame,
     dealCards,
   } = useCards();
-  // const { handleOnDragEnd } = useDragNDrop();
+
+  // Use refs to access current state values in callbacks.
+  const cardsInHandRef = useRef(cardsInHand);
+  const decrementingDeck1Ref = useRef(decrementingDeck1);
+  const decrementingDeck2Ref = useRef(decrementingDeck2);
+  const incrementingDeck1Ref = useRef(incrementingDeck1);
+  const incrementingDeck2Ref = useRef(incrementingDeck2);
+
+  // Keep refs in sync with state.
+  cardsInHandRef.current = cardsInHand;
+  decrementingDeck1Ref.current = decrementingDeck1;
+  decrementingDeck2Ref.current = decrementingDeck2;
+  incrementingDeck1Ref.current = incrementingDeck1;
+  incrementingDeck2Ref.current = incrementingDeck2;
+
+  // Set up sensors for drag and drop.
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const [activeId, setActiveId] = useState(null);
 
   useEffect(() => {
     startGame();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function handleOnDragEnd(result) {
-    const { destination } = result;
-    //if trying to drag to a non-droppable area, don't do anything:
-    if (!destination) return;
+  const handleDragStart = useCallback((event) => {
+    setActiveId(event.active.id);
+  }, []);
 
-    //if trying to drop a card into a deck:
-    if (destination.droppableId === "deck-slots") {
-      const currentCardsInHand = Array.from(cardsInHand);
+  const handleDragEnd = useCallback(
+    (event) => {
+      const { active, over } = event;
+      setActiveId(null);
 
-      if (destination.index === 0) {
-        //trying to add to decrementing deck 1
-        const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
-        const currTopCard = decrementingDeck1[decrementingDeck1.length - 1];
-        if (
-          cardToAdd.state.value < currTopCard.state.value ||
-          cardToAdd.state.value - currTopCard.state.value === 10
-        ) {
-          setCardsInHand(currentCardsInHand);
-          setDecrementingDeck1([...decrementingDeck1, cardToAdd]);
-          return;
-        } else {
-          alert(`Card needs to be lower than ${currTopCard.state.value}`);
+      if (!over) return;
+
+      const activeIdStr = active.id.toString();
+      const overIdStr = over.id.toString();
+
+      // Check if dragging from cards-in-hand.
+      const cardIndex = cardsInHandRef.current.findIndex(
+        (card) => card.value.toString() === activeIdStr
+      );
+
+      if (cardIndex === -1) return;
+
+      const cardToMove = cardsInHandRef.current[cardIndex];
+
+      // Check if dropping on a deck slot.
+      if (overIdStr.startsWith("deck-slot-")) {
+        const slotIndex = parseInt(overIdStr.split("-")[2], 10);
+        const currentCardsInHand = [...cardsInHandRef.current];
+        const [cardToAdd] = currentCardsInHand.splice(cardIndex, 1);
+
+        let isValid = false;
+        let currentDeck;
+        let setDeck;
+
+        if (slotIndex === 0) {
+          // Decrementing deck 1.
+          currentDeck = decrementingDeck1Ref.current;
+          const currTopCard = currentDeck[currentDeck.length - 1];
+          isValid =
+            cardToAdd.value < currTopCard.value ||
+            cardToAdd.value - currTopCard.value === 10;
+          if (isValid) {
+            setCardsInHand(currentCardsInHand);
+            setDecrementingDeck1([...currentDeck, cardToAdd]);
+            return;
+          } else {
+            alert(`Card needs to be lower than ${currTopCard.value}`);
+          }
+        } else if (slotIndex === 1) {
+          // Decrementing deck 2.
+          currentDeck = decrementingDeck2Ref.current;
+          const currTopCard = currentDeck[currentDeck.length - 1];
+          isValid =
+            cardToAdd.value < currTopCard.value ||
+            cardToAdd.value - currTopCard.value === 10;
+          if (isValid) {
+            setCardsInHand(currentCardsInHand);
+            setDecrementingDeck2([...currentDeck, cardToAdd]);
+            return;
+          } else {
+            alert(`Card needs to be lower than ${currTopCard.value}`);
+          }
+        } else if (slotIndex === 2) {
+          // Incrementing deck 1.
+          currentDeck = incrementingDeck1Ref.current;
+          const currTopCard = currentDeck[currentDeck.length - 1];
+          isValid =
+            cardToAdd.value > currTopCard.value ||
+            currTopCard.value - cardToAdd.value === 10;
+          if (isValid) {
+            setCardsInHand(currentCardsInHand);
+            setIncrementingDeck1([...currentDeck, cardToAdd]);
+            return;
+          } else {
+            alert(`Card needs to be higher than ${currTopCard.value}`);
+          }
+        } else if (slotIndex === 3) {
+          // Incrementing deck 2.
+          currentDeck = incrementingDeck2Ref.current;
+          const currTopCard = currentDeck[currentDeck.length - 1];
+          isValid =
+            cardToAdd.value > currTopCard.value ||
+            currTopCard.value - cardToAdd.value === 10;
+          if (isValid) {
+            setCardsInHand(currentCardsInHand);
+            setIncrementingDeck2([...currentDeck, cardToAdd]);
+            return;
+          } else {
+            alert(`Card needs to be higher than ${currTopCard.value}`);
+          }
         }
-      } else if (destination.index === 1) {
-        //trying to add to decrementing deck 2
-        const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
-        const currTopCard = decrementingDeck2[decrementingDeck2.length - 1];
-        if (
-          cardToAdd.state.value < currTopCard.state.value ||
-          cardToAdd.state.value - currTopCard.state.value === 10
-        ) {
-          setCardsInHand(currentCardsInHand);
-          setDecrementingDeck2([...decrementingDeck2, cardToAdd]);
-          return;
-        } else {
-          alert(`Card needs to be lower than ${currTopCard.state.value}`);
-        }
-      } else if (destination.index === 2) {
-        //trying to add to incrementing deck 1
-        const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
-        const currTopCard = incrementingDeck1[incrementingDeck1.length - 1];
-        if (
-          cardToAdd.state.value > currTopCard.state.value ||
-          currTopCard.state.value - cardToAdd.state.value === 10
-        ) {
-          setCardsInHand(currentCardsInHand);
-          setIncrementingDeck1([...incrementingDeck1, cardToAdd]);
-          return;
-        } else {
-          alert(`Card needs to be higher than ${currTopCard.state.value}`);
-        }
-      } else if (destination.index === 3) {
-        //trying to add to incrementing deck 2
-        const [cardToAdd] = currentCardsInHand.splice(result.source.index, 1);
-        const currTopCard = incrementingDeck2[incrementingDeck2.length - 1];
-        if (
-          cardToAdd.state.value > currTopCard.state.value ||
-          currTopCard.state.value - cardToAdd.state.value === 10
-        ) {
-          setCardsInHand(currentCardsInHand);
-          setIncrementingDeck2([...incrementingDeck2, cardToAdd]);
-          return;
-        } else {
-          alert(`Card needs to be higher than ${currTopCard.state.value}`);
+
+        // If validation failed, restore the card to hand.
+        setCardsInHand([...currentCardsInHand, cardToAdd]);
+        return;
+      }
+
+      // If dropping within cards-in-hand, reorder.
+      // Check if over is another card (not a deck slot).
+      if (!overIdStr.startsWith("deck-slot-") && overIdStr !== activeIdStr) {
+        const oldIndex = cardIndex;
+        const newIndex = cardsInHandRef.current.findIndex(
+          (card) => card.value.toString() === overIdStr
+        );
+
+        if (newIndex !== -1) {
+          setCardsInHand((items) => arrayMove(items, oldIndex, newIndex));
         }
       }
-    }
+    },
+    [
+      setCardsInHand,
+      setDecrementingDeck1,
+      setDecrementingDeck2,
+      setIncrementingDeck1,
+      setIncrementingDeck2,
+    ]
+  );
 
-    //if you're just moving cards within your hand:
-    const items = Array.from(cardsInHand);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(destination.index, 0, reorderedItem);
-    setCardsInHand(items);
-  }
+  const activeCard =
+    activeId &&
+    cardsInHand.find((card) => card.value.toString() === activeId.toString());
 
   return (
     <div className="main">
       <div className="deck draw-deck">Draw Deck: ({drawDeck.length})</div>
-      <DragDropContext onDragEnd={handleOnDragEnd}>
-        <Droppable droppableId="deck-slots" direction="horizontal">
-          {(provided) => (
-            <ul
-              className="deck-slots"
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-            >
-              <Draggable
-                key={"decrementingDeck1"}
-                draggableId={"decrementingDeck1"}
-                index={0}
-                isDragDisabled={true}
-              >
-                {(provided) => (
-                  <div>
-                    <h3>Going Down: </h3>
-                    <li
-                      className="deck decrementing-deck"
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                    >
-                      {
-                        decrementingDeck1[decrementingDeck1.length - 1].state
-                          .value
-                      }
-                    </li>
-                  </div>
-                )}
-              </Draggable>
-              <Draggable
-                key={"decrementingDeck2"}
-                draggableId={"decrementingDeck2"}
-                index={1}
-                isDragDisabled={true}
-              >
-                {(provided) => (
-                  <div>
-                    <h3> ↓ </h3>
-                    <li
-                      className="deck decrementing-deck"
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                    >
-                      {
-                        decrementingDeck2[decrementingDeck2.length - 1].state
-                          .value
-                      }
-                    </li>
-                  </div>
-                )}
-              </Draggable>
-              <Draggable
-                key={"incrementingDeck1"}
-                draggableId={"incrementingDeck1"}
-                index={2}
-                isDragDisabled={true}
-              >
-                {(provided) => (
-                  <div>
-                    <h3> Going Up:</h3>
-                    <li
-                      className="deck incrementing-deck"
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                    >
-                      {
-                        incrementingDeck1[incrementingDeck1.length - 1].state
-                          .value
-                      }
-                    </li>
-                  </div>
-                )}
-              </Draggable>
-              <Draggable
-                key={"incrementingDeck2"}
-                draggableId={"incrementingDeck2"}
-                index={3}
-                isDragDisabled={true}
-              >
-                {(provided) => (
-                  <div>
-                    <h3>↑</h3>
-                    <li
-                      className="deck incrementing-deck"
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                    >
-                      {
-                        incrementingDeck2[incrementingDeck2.length - 1].state
-                          .value
-                      }
-                    </li>
-                  </div>
-                )}
-              </Draggable>
-              {provided.placeholder}
-            </ul>
-          )}
-        </Droppable>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <ul className="deck-slots">
+          <DeckSlot
+            deck={decrementingDeck1}
+            label="Going Down:"
+            index={0}
+            type="decrementing"
+          />
+          <DeckSlot
+            deck={decrementingDeck2}
+            label="↓"
+            index={1}
+            type="decrementing"
+          />
+          <DeckSlot
+            deck={incrementingDeck1}
+            label="Going Up:"
+            index={2}
+            type="incrementing"
+          />
+          <DeckSlot
+            deck={incrementingDeck2}
+            label="↑"
+            index={3}
+            type="incrementing"
+          />
+        </ul>
 
         <button onClick={dealCards}>Deal Cards</button>
 
-        <Droppable droppableId="cards-in-hand" direction="horizontal">
-          {(provided) => (
-            <ul
-              className="cards-in-hand"
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-            >
-              {cardsInHand.map((card, i) => {
-                return (
-                  <Draggable
-                    key={card.state.value.toString()}
-                    draggableId={card.state.value.toString()}
-                    index={i}
-                  >
-                    {(provided) => (
-                      <li
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                      >
-                        {card.getJSX()}
-                      </li>
-                    )}
-                  </Draggable>
-                );
-              })}
-              {provided.placeholder}
-            </ul>
-          )}
-        </Droppable>
-      </DragDropContext>
+        <SortableContext
+          items={cardsInHand.map((card) => card.value.toString())}
+          strategy={horizontalListSortingStrategy}
+        >
+          <ul className="cards-in-hand">
+            {cardsInHand.map((card) => (
+              <SortableCard key={card.value} card={card} id={card.value} />
+            ))}
+          </ul>
+        </SortableContext>
+
+        <DragOverlay>
+          {activeCard ? <Card value={activeCard.value} /> : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }
